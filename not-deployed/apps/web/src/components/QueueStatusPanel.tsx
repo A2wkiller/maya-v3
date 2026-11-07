@@ -1,0 +1,6 @@
+import React from 'react';
+export type StatusRow={id:string;runStatus:string;checkedAt:string;sourceUpdatedAt:string|null;stale:boolean;model:string;cost:null;capabilityState:'not_verified';liveChangeAllowed:false};
+/** Read-only isolated panel. Rows must come from a scoped server projection, not notes. */
+export function QueueStatusPanel({rows,error,demo=true}:{rows:StatusRow[];error?:string;demo?:boolean}){
+ return <section className="queue-status" aria-label="Queue status"><header><h2>Current work</h2>{demo?<span>ISOLATED PREVIEW</span>:null}</header><p>Run status is not proof a feature works.</p>{error?<p role="alert">Status unavailable. No current-state claim.</p>:rows.length===0?<p role="status">No runs returned for this view.</p>:<ul>{rows.map(row=><li key={row.id}><h3>Run {row.id}</h3><dl><dt>Recorded status</dt><dd>{row.runStatus}</dd><dt>Freshness</dt><dd>{row.stale?'Stale or unverified. Check before relying on it.':'Checked against source timestamp'}</dd><dt>Source updated</dt><dd>{row.sourceUpdatedAt??'Unknown'}</dd><dt>Checked</dt><dd>{row.checkedAt}</dd><dt>Model</dt><dd>{row.model}</dd><dt>Cost</dt><dd>Unknown</dd><dt>Feature proof</dt><dd>Not verified by this view</dd></dl></li>)}</ul>}<p>Read only. No sends, restarts or changes.</p></section>;
+}

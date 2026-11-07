@@ -1,0 +1,14 @@
+import {it,expect,vi} from "vitest";
+import {queueRunView,type RunMetadata} from "./queue-run-view";
+const now=new Date('2026-11-07T08:00:00Z');
+function fixture(changes:Partial<RunMetadata>={}){const row={id:'fixture',status:'completed',updatedAt:now,modelProvider:null,modelId:null,...changes};const findMany=vi.fn(async()=>[row]);return {db:{run:{findMany}},findMany};}
+it('queries only verified owner/space metadata, not messages or arguments',async()=>{const f=fixture();await queueRunView(f.db,{spaceId:'s',userId:'u',now});expect(f.findMany).toHaveBeenCalledWith({where:{spaceId:'s',userId:'u'},select:{id:true,status:true,updatedAt:true,modelProvider:true,modelId:true},orderBy:{updatedAt:'desc'},take:100});});
+it('refuses absent owner before touching database',async()=>{const f=fixture();await expect(queueRunView(f.db,{spaceId:'s',userId:'',now})).rejects.toThrow();expect(f.findMany).not.toHaveBeenCalled();});
+it('does not turn completed run into capability proof',async()=>{const f=fixture();const [r]=await queueRunView(f.db,{spaceId:'s',userId:'u',now});expect(r).toMatchObject({runStatus:'completed',capabilityState:'not_verified',liveChangeAllowed:false});});
+it('unknown model/cost are not guessed or zero',async()=>{const f=fixture();const [r]=await queueRunView(f.db,{spaceId:'s',userId:'u',now});expect(r).toMatchObject({model:'unknown',cost:null});});
+it('stale does not become failed or abandoned',async()=>{const f=fixture({status:'running',updatedAt:new Date('2026-11-06T00:00:00Z')});const [r]=await queueRunView(f.db,{spaceId:'s',userId:'u',now});expect(r).toMatchObject({runStatus:'running',stale:true,capabilityState:'not_verified'});});
+it('future timestamps are unknown freshness',async()=>{const f=fixture({updatedAt:new Date('2026-11-08T00:00:00Z')});const [r]=await queueRunView(f.db,{spaceId:'s',userId:'u',now});expect(r).toMatchObject({sourceUpdatedAt:null,stale:true});});
+it('unknown statuses remain unknown',async()=>{const f=fixture({status:'made-up-success'});const [r]=await queueRunView(f.db,{spaceId:'s',userId:'u',now});expect(r?.runStatus).toBe('unknown');});
+it('does not leak unselected fields returned by a loose mock',async()=>{const f=fixture();f.findMany.mockResolvedValue([{id:'x',status:'waiting_input',updatedAt:now,modelId:null,modelProvider:null,request:'private',error:'private'} as RunMetadata]);const r=await queueRunView(f.db,{spaceId:'s',userId:'u',now});expect(JSON.stringify(r)).not.toContain('private');});
+it('keeps partial model metadata unknown',async()=>{const f=fixture({modelProvider:'fixture',modelId:null});const [r]=await queueRunView(f.db,{spaceId:'s',userId:'u',now});expect(r?.model).toBe('unknown');});
+it('surfaces database errors rather than showing false empty state',async()=>{const f=fixture();f.findMany.mockRejectedValue(new Error('offline'));await expect(queueRunView(f.db,{spaceId:'s',userId:'u',now})).rejects.toThrow('offline');});

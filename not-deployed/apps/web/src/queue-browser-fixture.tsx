@@ -1,0 +1,11 @@
+import React from "react";
+import {createRoot} from "react-dom/client";
+import {QueryClientProvider} from "@tanstack/react-query";
+import {I18nProvider} from "@lingui/react";
+import {i18n} from "@lingui/core";
+import {LinkedUsagePanel} from "./components/LinkedUsagePanel";
+import {queryClient,QueryUserProvider} from "./lib/query";
+import "./styles.css";
+i18n.load("en",{});i18n.activate("en");
+const owner=new URLSearchParams(location.search).get("fixtureOwner");
+createRoot(document.getElementById("root")!).render(<I18nProvider i18n={i18n}><QueryClientProvider client={queryClient}><QueryUserProvider value={owner}><main style={{maxWidth:360,margin:"24px auto",padding:12}}><p>Isolated browser fixture. Fictional session and database.</p><LinkedUsagePanel/></main></QueryUserProvider></QueryClientProvider></I18nProvider>);

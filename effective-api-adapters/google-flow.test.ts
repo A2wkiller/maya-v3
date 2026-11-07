@@ -1,0 +1,22 @@
+vi.mock('node:fs',()=>({readFileSync:()=>process.env.MAYA_GOOGLE_WRITE_HMAC??''}));
+import {it,expect,vi,afterEach} from 'vitest';
+import {googleTelegramCard} from './google-telegram-card.js';
+import {executePrivateGoogle} from './google-private-execute.js';
+import {handleTelegramApproval} from '../../../apps/api/src/telegram-approval.js';
+const old=process.env.MAYA_GOOGLE_WRITE_HMAC;afterEach(()=>{if(old===undefined)delete process.env.MAYA_GOOGLE_WRITE_HMAC;else process.env.MAYA_GOOGLE_WRITE_HMAC=old});
+for(const action of ['allow','deny'])it('synthetic persisted card -> '+action+' -> claimed private request',async()=>{
+ process.env.MAYA_GOOGLE_WRITE_HMAC='synthetic-key-no-real-credential-'.repeat(2);
+ const id='fixture-resource-id';const args={to:['synthetic@example.invalid'],subject:'SYNTHETIC TEST ONLY',body:'No Google action. Guard fixture only.'};
+ const effect={id:'eff-1',status:'intended',kind:'mcp__maya-google-write__gmail_send',request:['__rakazoCatalogTool','direct',{route:{connectorId:'fixture',resourceId:'resource',toolName:'gmail_send'},args:structuredClone(args)}]};
+ const card=googleTelegramCard({id},effect)!;expect(card).toContain('synthetic@example.invalid');expect(card).toContain('No Google action. Guard fixture only.');
+ let runStatus='waiting_input';
+ const prisma={messagingIdentity:{findUnique:async()=>({id:'mi',address:'42',dmThreadId:'telegram:42',botId:'test',userId:'owner',spaceId:'space'})},message:{findUnique:async()=>({id,threadId:'thread',runId:'run',blocks:[{kind:'ask',status:'pending',approvalEffectId:effect.id}]})},run:{findUnique:async()=>({id:'run',botId:'test',userId:'owner',spaceId:'space',threadId:'thread',trigger:'messaging',status:runStatus})},externalEffect:{findFirst:async()=>effect},messagingOutbound:{findMany:async()=>[{identityId:'mi',status:'sent',createdAt:new Date(),providerHandle:'42:123',body:card}]}};
+ const deps={prisma,events:{answerRunInput:async(x:any)=>{effect.status=x.answer==='allow'?'approved':'denied';runStatus='queued';return true}},jobs:{enqueue:vi.fn()}} as any;
+ const input={provider:'telegram',threadId:'telegram:42',messageId:'42:123',from:'42',action,askId:id};
+ const send=vi.fn(async(_url:any,options:any)=>{const p=JSON.parse(options.body);expect(p.request.url).toBe('https://www.googleapis.com/gmail/v1/users/me/messages/send');const mime=Buffer.from(p.request.body.raw,'base64url').toString();expect(mime).toContain('synthetic@example.invalid');expect(mime).toContain(Buffer.from(args.body).toString('base64'));return new Response(JSON.stringify({status:'completed',result:{id:'synthetic-only'}}))});
+ const answer=await handleTelegramApproval(deps,input);expect(answer).toContain(action==='allow'?'Allowed once':'Denied');
+ const call={connectorCall:{route:{connectorId:'fixture',resourceId:'resource',toolName:'gmail_send'}},name:effect.kind,args,claimedEffect:action==='allow',bypassApproval:false,applied:{effect},finish:async(x:any)=>x};
+ if(action==='allow')expect(await executePrivateGoogle({},call,send as any)).toMatchObject({status:'completed'});else await expect(executePrivateGoogle({},call,send as any)).rejects.toThrow('claim');
+ expect(send).toHaveBeenCalledTimes(action==='allow'?1:0);
+ expect(await handleTelegramApproval(deps,input)).toContain('Nothing was approved');
+});

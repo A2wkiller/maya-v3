@@ -1,0 +1,4 @@
+{
+  "default": {"provider": "custom", "model": "maya-auto"},
+  "private": {"provider": "ollama", "model": "qwen3:4b-32k"}
+}

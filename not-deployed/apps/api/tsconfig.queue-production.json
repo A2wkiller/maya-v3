@@ -1,0 +1,1 @@
+{"extends": "./tsconfig.json", "include": ["src/routes/queue-readonly.ts"]}

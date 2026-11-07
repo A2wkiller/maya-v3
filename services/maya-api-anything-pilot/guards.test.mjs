@@ -1,0 +1,6 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {checkInput,checkPlan,checkTransport} from '/wrapper.mjs';
+const plan={ok:true,site:'hacker-news',op:'frontPage',readOnly:true,signedIn:false,tier:1,maxTier:1,request:{method:'GET',url:'https://news.ycombinator.com/'}};
+test('only empty input accepted',()=>{checkInput({});for(const x of [{site:'other'},{url:'http://127.0.0.1'},null,[]])assert.throws(()=>checkInput(x))});
+for(const [field,val]of [['site','other'],['op','send'],['readOnly',false],['signedIn',true],['tier',2],['maxTier',3]])test('refuse '+field,()=>assert.throws(()=>checkPlan({...plan,[field]:val})));
+for(const [url,method,headers,body] of [['http://127.0.0.1/','GET',{}],['http://169.254.169.254/','GET',{}],['https://example.org/','GET',{}],['https://news.ycombinator.com/','POST',{}],['https://news.ycombinator.com/','GET',{Cookie:'x'}],['https://news.ycombinator.com/','GET',{Authorization:'x'}],['https://news.ycombinator.com/','GET',{},'data']])test('transport refuses '+url+' '+method+' '+Object.keys(headers),()=>assert.throws(()=>checkTransport(url,{method,headers,body})));
+test('reviewed public GET accepted',()=>{checkPlan(plan);checkTransport('https://news.ycombinator.com/',{method:'GET',headers:{accept:'text/html'}})});

@@ -1,0 +1,14 @@
+import {it,expect,vi} from 'vitest';
+import {googleWritePlan as plan} from './google-write-policy.js';
+import {googleRequest as req,executeGoogleWrite as run} from './google-write-transport.js';
+const a='owner@example.invalid';const mail={to:['friend@example.invalid'],bcc:['hidden@example.invalid'],subject:'Hello 😄',body:'Fictional body'};
+it('encodes only approved MIME recipients and full body',()=>{const r=req(plan('gmail_send',mail,a));const raw=Buffer.from(r.body.raw,'base64url').toString();expect(raw).toContain('Bcc: hidden@example.invalid');expect(raw).toContain(Buffer.from(mail.body).toString('base64'));expect(r.method).toBe('POST')});
+it('draft wraps MIME in message',()=>expect(req(plan('gmail_draft',mail,a)).body.message.raw).toBeTruthy());
+it('no retry on dropped response',async()=>{const fn=vi.fn(async()=>{throw Error('timeout')});expect(await run(plan('gmail_send',mail,a),fn)).toMatchObject({status:'uncertain',retry:false});expect(fn).toHaveBeenCalledTimes(1)});
+it('changed target needs new approval',async()=>expect(await run(plan('drive_trash',{fileId:'fixture',etag:'v1'},a),async()=>({status:412,result:{}}))).toMatchObject({status:'changed',requiresNewApproval:true}));
+it('trash is not permanent delete',()=>{const r=req(plan('drive_trash',{fileId:'fixture',etag:'v1'},a));expect(r.method).toBe('PATCH');expect(r.body).toEqual({trashed:true});expect(r.headers['If-Match']).toBe('v1')});
+it('share only named person with explicit notification',()=>{const r=req(plan('drive_share',{fileId:'fixture',etag:'v1',email:'friend@example.invalid',role:'reader',notify:false},a));expect(r.body.type).toBe('user');expect(r.url).toContain('sendNotificationEmail=false')});
+it('single multipart creation',()=>{const r=req(plan('drive_create',{parentId:'folder',name:'Fixture',mimeType:'text/plain',content:'fictional'},a));expect(r.url).toContain('uploadType=multipart');expect(r.body).toContain('fictional');expect(r.body).toContain('folder')});
+it('no compound rename/content',()=>expect(()=>req(plan('drive_update',{fileId:'fixture',etag:'v1',name:'new',content:'body'},a))).toThrow());
+it('calendar delete notifies exactly as approved',()=>{const r=req(plan('calendar_delete',{calendarId:'primary',eventId:'fixture',etag:'v1',sendUpdates:'all'},a));expect(r.method).toBe('DELETE');expect(r.url).toContain('sendUpdates=all');expect(r.headers['If-Match']).toBe('v1')});
+it('rechecks tampered saved plan',()=>{const p=plan('gmail_send',mail,a);p.request.args.to=['other@example.invalid'];expect(()=>req(p)).toThrow()});

@@ -1,0 +1,25 @@
+import {describe,it,expect} from 'vitest';
+import {googleWritePlan as plan,verifyGoogleReplay as replay} from './google-write-policy.js';
+const account='owner@example.invalid';const mail={to:['friend@example.invalid'],cc:[],bcc:[],subject:'Fixture',body:'Fictional hello'};
+const evt={summary:'Fictional fixture',start:{dateTime:'2026-11-05T10:00:00+05:30',timeZone:'Asia/Kolkata'},end:{dateTime:'2026-11-05T10:30:00+05:30',timeZone:'Asia/Kolkata'},attendees:['friend@example.invalid']};
+describe('Google write preparation only',()=>{
+ it('shows all email recipients and words',()=>{const p=plan('gmail_send',mail,account);expect(p.preview).toContain(mail.body);expect(p.preview).toContain(mail.to[0]);expect(p.alwaysAllow).toBe(false)});
+ it.each(['to','cc','bcc','subject','body'])('binds changed %s',key=>{const p=plan('gmail_send',mail,account);expect(()=>replay(p,'gmail_send',{...mail,[key]:['to','cc','bcc'].includes(key)?['other@example.invalid']:'changed'},account)).toThrow()});
+ it('binds account',()=>expect(()=>replay(plan('gmail_send',mail,account),'gmail_send',mail,'other@example.invalid')).toThrow());
+ it('stable key order',()=>expect(replay(plan('gmail_send',mail,account),'gmail_send',{body:mail.body,subject:mail.subject,bcc:[],cc:[],to:mail.to},account)).toBeTruthy());
+ it('rejects hidden raw MIME',()=>expect(()=>plan('gmail_send',{...mail,raw:'hidden'},account)).toThrow());
+ it('rejects attachment until contents review supported',()=>expect(()=>plan('gmail_send',{...mail,attachments:['fictional']},account)).toThrow());
+ it('rejects headers',()=>expect(()=>plan('gmail_send',{...mail,subject:'a\nBcc:evil'},account)).toThrow());
+ it('rejects clipped previews',()=>expect(()=>plan('gmail_send',{...mail,body:'x'.repeat(4000)},account)).toThrow());
+ it('requires explicit notifications',()=>expect(()=>plan('calendar_create',{calendarId:'primary',event:evt},account)).toThrow());
+ it('previews attendees and updates',()=>expect(plan('calendar_create',{calendarId:'primary',event:evt,sendUpdates:'all'},account).preview).toContain('friend@example.invalid'));
+ it('requires target revision',()=>expect(()=>plan('calendar_delete',{calendarId:'primary',eventId:'fixture',sendUpdates:'all'},account)).toThrow());
+ it('rejects timezone-less events',()=>expect(()=>plan('calendar_create',{calendarId:'primary',event:{...evt,start:{dateTime:'2026-11-05T10:00:00'}},sendUpdates:'none'},account)).toThrow());
+ it('rejects guest alteration of unknown event fields',()=>expect(()=>plan('calendar_create',{calendarId:'primary',event:{...evt,guestsCanModify:true},sendUpdates:'all'},account)).toThrow());
+ it('named share previews role notification',()=>{const p=plan('drive_share',{fileId:'fixture',etag:'v1',email:'friend@example.invalid',role:'reader',notify:false},account);expect(p.preview).toContain('reader');expect(p.preview).toContain('false')});
+ it('rejects public share',()=>expect(()=>plan('drive_share',{fileId:'fixture',etag:'v1',email:'anyone',role:'reader',notify:false},account)).toThrow());
+ it('rejects permanent delete',()=>expect(()=>plan('drive_delete',{fileId:'fixture'},account)).toThrow());
+ it('requires parent for create',()=>expect(()=>plan('drive_create',{name:'Fixture',mimeType:'text/plain',content:'fake'},account)).toThrow());
+ it('shows exact text update',()=>expect(plan('drive_update',{fileId:'fixture',etag:'v1',content:'fictional replacement'},account).preview).toContain('fictional replacement'));
+ it('no executable files',()=>expect(()=>plan('drive_create',{name:'a',parentId:'fixture',mimeType:'application/x-sh',content:'fake'},account)).toThrow());
+});

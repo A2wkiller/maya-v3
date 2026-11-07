@@ -1,0 +1,1 @@
+{"extends": "./tsconfig.json", "include": ["src/components/RewriteReviewPanel.tsx", "src/components/QueueStatusPanel.tsx", "src/lib/composer-rewrite-review.ts", "src/lib/queue-run-view.ts", "src/lib/channel-usage-view.ts", "src/lib/linked-dm-usage.ts", "src/pages/shell/composer.tsx", "src/vite-env.d.ts"]}

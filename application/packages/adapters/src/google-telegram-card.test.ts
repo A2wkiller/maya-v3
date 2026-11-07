@@ -1,0 +1,10 @@
+import {describe,it,expect} from 'vitest';import {googleTelegramCard} from './google-telegram-card.js';import {canonical} from './google-write-policy.js';
+const msg={id:'fixture-resource-id'};const args={to:['synthetic@example.invalid'],subject:'Synthetic',body:'Full $50 body\nsecond line'};const effect={kind:'mcp__maya-google-write__gmail_send',request:['__rakazoCatalogTool','direct',{route:{connectorId:'fixture',resourceId:'resource',toolName:'gmail_send'},args}]};
+describe('Full Google Telegram saved-effect card',()=>{
+ it('renders only exact stored target and contents plus fixed account',()=>{const c=googleTelegramCard(msg,effect)!;expect(c).toContain('Account: owner@example.invalid');expect(c).toContain(JSON.stringify(JSON.parse(canonical(args)),null,2));expect(c).toContain('Allow once or Deny');expect(c).not.toContain('Always allow')});
+ it('hash binds changes in recipients and body',()=>{const c=googleTelegramCard(msg,effect)!;const changed=googleTelegramCard(msg,{...effect,request:['__rakazoCatalogTool','direct',{route:{connectorId:'fixture',resourceId:'resource',toolName:'gmail_send'},args:{...args,body:'changed'}}]})!;expect(c.split('\n')[0]).not.toBe(changed.split('\n')[0])});
+ it('does not treat read tools as writes',()=>expect(googleTelegramCard(msg,{kind:'mcp__maya-google-readonly__gmail_get',request:[]})).toBeNull());
+ it('rejects foreign or injected parameters',()=>expect(()=>googleTelegramCard(msg,{...effect,request:['__rakazoCatalogTool','direct',{route:{connectorId:'fixture',resourceId:'resource',toolName:'gmail_send'},args:{...args,approval:true}}]})).toThrow());
+ it('rejects malformed request structure',()=>{for(const r of [null,{},[],['c','s'],['c','s',null]])expect(()=>googleTelegramCard(msg,{...effect,request:r})).toThrow()});
+ it('refuses oversized full body instead of cutting it',()=>expect(()=>googleTelegramCard(msg,{...effect,request:['__rakazoCatalogTool','direct',{route:{connectorId:'fixture',resourceId:'resource',toolName:'gmail_send'},args:{...args,body:'x'.repeat(4000)}}]})).toThrow());
+});

@@ -1,0 +1,25 @@
+--- a/packages/adapters/src/executor.ts
++++ b/packages/adapters/src/executor.ts
+@@ -1,3 +1,4 @@
++import { automaticPromptPreparation } from "./automatic-prompt-understanding.js";
+ import {ownerPersonaInstruction,reconcileOwnerStyle} from "./owner-persona.js";
+ import {linkTaskNote} from "./maya-owner-link.js";
+ import type { AgentRunRequest, ComputerRef, SemanticMemoryProvider } from "@rakazo/adapter-kit";
+@@ -1629,7 +1630,7 @@
+               // Keep an explicit executor override, but let the runtime select
+               // cache-aware context for connections declaring a cache window.
+               contextStrategy: deps.contextStrategy,
+-              instructions: [!approvalContinuation && !turnCheckpoint && approvedEffects.length === 0 ? coreProfile : undefined, ownerCurrentTurn ? "Current reply relevance: Answer the latest message first. Keep history and memory for context, not as new requests. Do not resume older work unless the latest message explicitly asks to continue it. A greeting is not permission to continue a task. A task whose result was delivered is closed; a follow-up invitation is only a question, not an instruction to keep working. Start a new continuation only when the latest message explicitly requests it. Do not read saved notes, search memory/RAG or query stored personal data for simple chat or self-contained questions; use those only when stored information is needed. An unrelated question takes priority. Ask an optional follow-up about a task at most once, only in the closing Next (.. sec) line when delivering that task's result. After that, drop the topic until the user raises it. Never bring up old reel, audio, ffmpeg or other topics in a greeting or unrelated turn. Do not execute tools for an old task merely because it is in history. Do not acknowledge these operating rules as the user request. Answer the actual current user message directly. A short acknowledgment applies only to what the user said." : undefined, ...userTurnInstructions({
++              instructions: automaticPromptPreparation({ prompt, scope: { ownerId: run.userId, botOwnerId: bot.userId, expectedOwnerId: "705ef1d1-bc56-5d3f-94a5-e99079fd135e", botId: bot.id, threadBotId: thread.botId, allowedBotIds: ["fixture-owner-bot","fixture-resource-id"], trigger: run.trigger, sourceRole: coreProfileSource?.role, sourceThreadId: coreProfileSource?.threadId, threadId: thread.id, groupId: thread.groupId, externalConversationId: thread.externalConversationId, checkpoint: Boolean(turnCheckpoint), approvalContinuation: Boolean(approvalContinuation || approvedEffects.length) }, instructions: [!approvalContinuation && !turnCheckpoint && approvedEffects.length === 0 ? coreProfile : undefined, ownerCurrentTurn ? "Current reply relevance: Answer the latest message first. Keep history and memory for context, not as new requests. Do not resume older work unless the latest message explicitly asks to continue it. A greeting is not permission to continue a task. A task whose result was delivered is closed; a follow-up invitation is only a question, not an instruction to keep working. Start a new continuation only when the latest message explicitly requests it. Do not read saved notes, search memory/RAG or query stored personal data for simple chat or self-contained questions; use those only when stored information is needed. An unrelated question takes priority. Ask an optional follow-up about a task at most once, only in the closing Next (.. sec) line when delivering that task's result. After that, drop the topic until the user raises it. Never bring up old reel, audio, ffmpeg or other topics in a greeting or unrelated turn. Do not execute tools for an old task merely because it is in history. Do not acknowledge these operating rules as the user request. Answer the actual current user message directly. A short acknowledgment applies only to what the user said." : undefined, ...userTurnInstructions({
+                 botInstructions: reconcileOwnerStyle(runIdentityInstruction(bot, run.trigger),Boolean(currentPersona)),
+                 groupContext,
+                 messagingContext,
+@@ -1659,7 +1660,7 @@
+                 userComputer,
+               }), currentPersona]
+                 .filter((instruction): instruction is string => Boolean(instruction))
+-                .join("\n\n"),
++                .join("\n\n") }).instructions,
+               history: runtimeHistory,
+               currentTurnImages,
+               currentRunRequiresImageInput,

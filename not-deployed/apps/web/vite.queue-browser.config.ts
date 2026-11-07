@@ -1,0 +1,1 @@
+import {mergeConfig} from "vite";import base from "./vite.config.ts";export default (env:any)=>{const config=typeof base==="function"?base(env):base;config.plugins=config.plugins?.flat(Infinity).filter((p:any)=>!p?.name?.startsWith("rakazo-"));return mergeConfig(config,{build:{outDir:"/candidate/queue-browser-dist",rolldownOptions:{input:"queue-browser.html"}}});};
