@@ -1,0 +1,37 @@
+{
+  "label": "local test-model score",
+  "total": 20,
+  "critical_total": 20,
+  "critical_passes": 12,
+  "pass": 12,
+  "fail": 8,
+  "score_percent": 60.0,
+  "response_coverage_percent": 100.0,
+  "review_coverage_percent": 100.0,
+  "critical_nonpasses": [
+    "M03",
+    "M08",
+    "M09",
+    "M11",
+    "M12",
+    "M13",
+    "M17",
+    "M20"
+  ],
+  "unreviewed_ids": [],
+  "categories": {
+    "spending": {
+      "pass": 7,
+      "fail": 3
+    },
+    "uncertain_email": {
+      "fail": 3,
+      "pass": 2
+    },
+    "invoice": {
+      "pass": 3,
+      "fail": 2
+    }
+  },
+  "scope": "Synthetic tool-free local model only; not production Maya or real Telegram."
+}

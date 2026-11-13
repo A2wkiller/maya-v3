@@ -6,6 +6,18 @@ Maya is meant to feel like a friend who can help with real work: natural convers
 
 > **Source snapshot, 7 November 2026.** This is a sanitized review candidate, not a new production deployment or a tested one-command distribution. The private service is running; some code here is a prototype. See [status](docs/STATUS.md) before judging any feature claim.
 
+## New: local evaluation baseline (13 November 2026)
+
+The [50-case evaluation and 20 fresh focused scenarios](evaluations/2026-11-13-local/README.md)
+are now included with exact synthetic responses, rubrics and a repeatable scorer.
+On qwen3:4b-32k, a test-only prompt revision changed the original-set result from
+35/50 (70%) to 47/50 (94%), and the separate fresh focused set from 6/20 (30%)
+to 12/20 (60%). These are **local test-model scores**, not deployed Maya or real
+Telegram scores. The 60% fresh-case result exposes remaining gaps; the 94%
+development-set result is not general accuracy. No production change was made.
+See the [publication review](docs/EVAL-PUBLICATION-REVIEW-20261113.md) for scope
+and sensitive-data checks.
+
 ## What is Maya?
 
 One chat surface sits in front of a web app, a persistent worker, model routing, memory and tool bridges. Hermes handles coding/research jobs. Narrow specialist roles have a separate policy-test harness. The goal is one assistant that keeps the context of a task without pretending that every experiment is already reliable.

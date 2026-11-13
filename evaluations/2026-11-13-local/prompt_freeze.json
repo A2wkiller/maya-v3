@@ -1,0 +1,5 @@
+{
+  "frozen_at": "2026-11-13T06:09:18.510986+00:00",
+  "sha256": "5f87d6bdf85cf1593745b001becdbf31fb9a4e21ab878f148bfc6b9fe56026d9",
+  "policy": "Single candidate frozen before new cases and any new inference; no retuning on held-out outputs."
+}

@@ -1,0 +1,22 @@
+{
+  "measured_on": "2026-11-13",
+  "model": "qwen3:4b-32k",
+  "model_digest": "fc020fbfe17ef48c9249ea75810e4af3babe6a825c3f21a3686cddcce5cd86df",
+  "quantization": "Q4_K_M",
+  "parameters": "4.0B",
+  "temperature": 0,
+  "seed": 42,
+  "num_ctx": 4096,
+  "num_predict": 192,
+  "num_thread": 2,
+  "thinking": false,
+  "tools": [],
+  "private_memory": false,
+  "cloud_model_calls": false,
+  "case_count": 50,
+  "neutral_persona": true,
+  "single_evaluator": true,
+  "source_reference": "https://github.com/A2wkiller/maya-v3",
+  "interruption_note": "Initial 10-case SSH batch was interrupted after nine recorded responses. No process remained. M10 had no retained response and was executed later. No completed recorded response was replaced; unrecorded partial output may have existed.",
+  "scope": "Local synthetic test-model responses only. No deployed Maya changes, no real Telegram test, no live tool execution. Not a production safety certification."
+}

@@ -1,0 +1,6 @@
+{
+  "frozen_at": "2026-11-13T06:10:02.671074+00:00",
+  "sha256": "92209b353438032e4260db30dfd475d2225acd3969959f3b4d31f0b5edd9191b",
+  "cases": 20,
+  "notes": "Frozen after one candidate prompt, before any new inference. Fresh variants, same evaluator and known risk categories; not an independent blind holdout."
+}
